@@ -1,0 +1,5 @@
+<launch>
+    <node pkg="computer_monitor" type="nvidia_temp.py" name="nvidia_temp">
+        <param name="xml" value="True"/>
+    </node>
+</launch>

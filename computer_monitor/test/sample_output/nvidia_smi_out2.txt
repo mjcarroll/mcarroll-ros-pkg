@@ -1,0 +1,78 @@
+
+==============NVSMI LOG==============
+
+Timestamp                       : Sat Oct 29 15:10:03 2011
+
+Driver Version                  : 270.41.06
+
+Attached GPUs                   : 1
+
+GPU 0:1:0
+    Product Name                : GeForce 9800 GTX/9800 GTX+
+    Display Mode                : N/A
+    Persistence Mode            : Disabled
+    Driver Model
+        Current                 : N/A
+        Pending                 : N/A
+    Serial Number               : N/A
+    GPU UUID                    : N/A
+    Inforom Version
+        OEM Object              : N/A
+        ECC Object              : N/A
+        Power Management Object : N/A
+    PCI
+        Bus                     : 1
+        Device                  : 0
+        Domain                  : 0
+        Device Id               : 61210DE
+        Bus Id                  : 0:1:0
+    Fan Speed                   : 50 %
+    Memory Usage
+        Total                   : 511 Mb
+        Used                    : 285 Mb
+        Free                    : 225 Mb
+    Compute Mode                : Default
+    Utilization
+        Gpu                     : N/A
+        Memory                  : N/A
+    Ecc Mode
+        Current                 : N/A
+        Pending                 : N/A
+    ECC Errors
+        Volatile
+            Single Bit            
+                Device Memory   : N/A
+                Register File   : N/A
+                L1 Cache        : N/A
+                L2 Cache        : N/A
+                Total           : N/A
+            Double Bit            
+                Device Memory   : N/A
+                Register File   : N/A
+                L1 Cache        : N/A
+                L2 Cache        : N/A
+                Total           : N/A
+        Aggregate
+            Single Bit            
+                Device Memory   : N/A
+                Register File   : N/A
+                L1 Cache        : N/A
+                L2 Cache        : N/A
+                Total           : N/A
+            Double Bit            
+                Device Memory   : N/A
+                Register File   : N/A
+                L1 Cache        : N/A
+                L2 Cache        : N/A
+                Total           : N/A
+    Temperature
+        Gpu                     : 67 C
+    Power Readings
+        Power State             : N/A
+        Power Management        : N/A
+        Power Draw              : N/A
+        Power Limit             : N/A
+    Clocks
+        Graphics                : N/A
+        SM                      : N/A
+        Memory                  : N/A

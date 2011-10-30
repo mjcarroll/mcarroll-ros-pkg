@@ -1,0 +1,216 @@
+#!/usr/bin/env python
+#
+# Software License Agreement (BSD License)
+#
+# Copyright (c) 2010, Willow Garage, Inc.
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+#
+#  * Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+#  * Redistributions in binary form must reproduce the above
+#    copyright notice, this list of conditions and the following
+#    disclaimer in the documentation and/or other materials provided
+#    with the distribution.
+#  * Neither the name of the Willow Garage nor the names of its
+#    contributors may be used to endorse or promote products derived
+#    from this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+# FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+# COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+# INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+# BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+
+##\author Kevin Watts
+
+from __future__ import division
+
+PKG = 'computer_monitor'
+import roslib; roslib.load_manifest(PKG)
+
+import rospy
+
+from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus, KeyValue
+from pr2_msgs.msg import GPUStatus
+
+import subprocess
+import math
+from StringIO import StringIO
+from lxml import etree
+
+MAX_FAN_RPM = 4500
+
+def _rads_to_rpm(rads):
+    return rads / (2 * math.pi) * 60
+
+def _rpm_to_rads(rpm):
+    return rpm * (2 * math.pi) / 60
+
+def gpu_status_to_diag(gpu_stat, hostname='localhost'):
+    stat = DiagnosticStatus()
+    stat.name = '%s GPU Status'%hostname
+    stat.message = 'OK'
+    stat.level = DiagnosticStatus.OK
+    stat.hardware_id = '%s on %s'%(gpu_stat.pci_device_id,hostname)
+
+    stat.values.append(KeyValue(key='Product Name',         value = gpu_stat.product_name))
+    stat.values.append(KeyValue(key='PCI Device/Vendor ID', value = gpu_stat.pci_device_id))
+    stat.values.append(KeyValue(key='PCI Location ID',      value = gpu_stat.pci_location))
+    stat.values.append(KeyValue(key='Display',              value = gpu_stat.display))
+    stat.values.append(KeyValue(key='Driver Version',       value = gpu_stat.driver_version))
+    stat.values.append(KeyValue(key='Temperature (C)',      value = '%.0f' % gpu_stat.temperature))
+    stat.values.append(KeyValue(key='Fan Speed (RPM)',      value = '%.0f' % _rads_to_rpm(gpu_stat.fan_speed)))
+    stat.values.append(KeyValue(key='Usage (%)',            value = '%.0f' % gpu_stat.gpu_usage))
+    stat.values.append(KeyValue(key='Memory (%)',           value = '%.0f' % gpu_stat.memory_usage))
+
+    # Check for valid data
+    if not gpu_stat.product_name or not gpu_stat.pci_device_id:
+        stat.level = DiagnosticStatus.ERROR
+        stat.message = 'No Device Data'
+        return stat
+
+    # Check load
+    if gpu_stat.gpu_usage > 98:
+        stat.level = max(stat.level, DiagnosticStatus.WARN)
+        stat.message = 'High Load'
+
+    # Check thresholds
+    if gpu_stat.temperature > 90:
+        stat.level = max(stat.level, DiagnosticStatus.WARN)
+        stat.message = 'High Temperature'
+    if gpu_stat.temperature > 95:
+        stat.level = max(stat.level, DiagnosticStatus.ERROR)
+        stat.message = 'Temperature Alarm'
+
+    # Check fan
+    if gpu_stat.fan_speed == 0:
+        stat.level = max(stat.level, DiagnosticStatus.ERROR)
+        stat.message = 'No Fan Speed'
+    return stat
+
+
+def _find_val(output, word):
+    lines = output.split('\n')
+    for line in lines:
+        tple = line.split(':')
+        if not len(tple) > 1:
+            continue
+
+        name = tple[0].strip()
+        val = ':'.join(tple[1:]).strip()
+
+        if not name.lower() == word.lower():
+            continue
+        
+        return val.strip()
+
+    return ''
+
+def parse_smi_output(output):
+    if output.find('<?xml') != -1:
+        return parse_smi_xml_output(output)
+    else:
+        return parse_smi_text_output(output)
+
+def parse_smi_text_output(output):
+    gpu_stat = GPUStatus()
+    gpu_stat.product_name   = _find_val(output, 'Product Name')
+    gpu_stat.pci_device_id  = _find_val(output, 'PCI Device/Vendor ID')
+    gpu_stat.pci_location   = _find_val(output, 'PCI Location ID')
+    gpu_stat.display        = _find_val(output, 'Display')
+    gpu_stat.driver_version = _find_val(output, 'Driver Version')
+    temp_str = _find_val(output, 'Temperature')
+    if temp_str:
+        temp, units = temp_str.split()
+        gpu_stat.temperature = int(temp)
+    fan_str = _find_val(output, 'Fan Speed')
+    if fan_str:
+        # Fan speed in RPM
+        fan_spd = float(fan_str.strip('\%').strip()) * 0.01 * MAX_FAN_RPM
+        # Convert fan speed to Hz
+        gpu_stat.fan_speed = _rpm_to_rads(fan_spd)
+    usage_str = _find_val(output, 'GPU')
+    if usage_str:
+        usage = usage_str.strip('\%').strip()
+        gpu_stat.gpu_usage = int(usage)
+    mem_str = _find_val(output, 'Memory')
+    if mem_str:
+        mem = mem_str.strip('\%').strip()
+        gpu_stat.memory_usage = int(mem)
+    return gpu_stat
+
+def parse_smi_xml_output(output):
+    gpu_stat = GPUStatus()
+    parser = etree.XMLParser(remove_blank_text=True)
+    tree = etree.parse(StringIO(output), parser)
+    root = tree.getroot()
+    
+    gpu = root.find('gpu')
+    gpu_stat.driver_version = root.findtext('driver_version')
+    gpu_stat.display = "N/A"
+    
+    gpu_stat.product_name = gpu.findtext('product_name')
+    gpu_stat.pci_device_id = gpu.findtext('pci/pci_device_id')
+    gpu_stat.pci_location = gpu.findtext('pci/pci_bus_id')
+    
+    temp_str = gpu.findtext('temperature/gpu_temp')
+    if temp_str:
+        temp, units = temp_str.split()
+        gpu_stat.temperature = int(temp)
+        
+    fan_str = gpu.findtext('fan_speed')
+    if fan_str:
+        # Fan speed in RPM
+        fan_spd = float(fan_str.strip('\%').strip()) * 0.01 * MAX_FAN_RPM
+        # Convert fan speed to Hz
+        gpu_stat.fan_speed = _rpm_to_rads(fan_spd)
+    
+    usage_str = gpu.findtext('utilization/gpu_util')
+    if usage_str:
+        if usage_str != 'N/A':
+            usage = usage_str.strip('\%').strip()
+            gpu_stat.gpu_usage = int(usage)
+        else:
+            gpu_stat.gpu_usage = 0 
+    
+    mem_str = gpu.findtext('utilization/memory_util')
+    if mem_str:
+        if mem_str != 'N/A':
+            mem = mem_str.strip('\%').strip()
+            gpu_stat.memory_usage = int(mem)
+        else:
+            total_mem = gpu.findtext('memory_usage/total')
+            used_mem = gpu.findtext('memory_usage/used')
+            if total_mem != 'N/A' and used_mem != 'N/A':
+                total, units = total_mem.split()
+                used, units = used_mem.split()
+                gpu_stat.memory_usage = math.ceil(float(used)/float(total) * 100)    
+    return gpu_stat
+
+        
+def get_gpu_status(xml = False):
+    if not xml:
+        p = subprocess.Popen('sudo nvidia-smi -a', stdout = subprocess.PIPE, 
+                             stderr = subprocess.PIPE, shell = True)
+    else:
+        p = subprocess.Popen('nvidia-smi -a -x', stdout = subprocess.PIPE, 
+                             stderr = subprocess.PIPE, shell = True)
+    (o, e) = p.communicate()
+
+    if not p.returncode == 0:
+        return ''
+
+    if not o: return ''
+
+    return o

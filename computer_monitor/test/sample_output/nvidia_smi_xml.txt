@@ -1,0 +1,93 @@
+<?xml version="1.0" ?>
+<!DOCTYPE nvidia_smi_log SYSTEM "nvsmi_device.dtd">
+<nvidia_smi_log>
+	<timestamp>Sat Oct 29 15:41:20 2011</timestamp>
+	<driver_version>270.41.06</driver_version>
+	<attached_gpus>1</attached_gpus>
+	<gpu id="0:1:0">
+		<product_name>GeForce 9800 GTX/9800 GTX+</product_name>
+		<display_mode>N/A</display_mode>
+		<persistence_mode>Disabled</persistence_mode>
+		<driver_model>
+			<current_dm>N/A</current_dm>
+			<pending_dm>N/A</pending_dm>
+		</driver_model>
+		<serial>N/A</serial>
+		<uuid>N/A</uuid>
+		<inforom_version>
+			<oem_object>N/A</oem_object>
+			<ecc_object>N/A</ecc_object>
+			<pwr_object>N/A</pwr_object>
+		</inforom_version>
+		<pci>
+			<pci_bus>1</pci_bus>
+			<pci_device>0</pci_device>
+			<pci_domain>0</pci_domain>
+			<pci_device_id>61210DE</pci_device_id>
+			<pci_bus_id>0:1:0</pci_bus_id>
+		</pci>
+		<fan_speed>51 %</fan_speed>
+		<memory_usage>
+			<total>511 Mb</total>
+			<used>274 Mb</used>
+			<free>236 Mb</free>
+		</memory_usage>
+		<compute_mode>Default</compute_mode>
+		<utilization>
+			<gpu_util>N/A</gpu_util>
+			<memory_util>N/A</memory_util>
+		</utilization>
+		<ecc_mode>
+			<current_ecc>N/A</current_ecc>
+			<pending_ecc>N/A</pending_ecc>
+		</ecc_mode>
+		<ecc_errors>
+			<volatile>
+				<single_bit>
+					<device_memory>N/A</device_memory>
+					<register_file>N/A</register_file>
+					<l1_cache>N/A</l1_cache>
+					<l2_cache>N/A</l2_cache>
+					<total>N/A</total>
+				</single_bit>
+				<double_bit>
+					<device_memory>N/A</device_memory>
+					<register_file>N/A</register_file>
+					<l1_cache>N/A</l1_cache>
+					<l2_cache>N/A</l2_cache>
+					<total>N/A</total>
+				</double_bit>
+			</volatile>
+			<aggregate>
+				<single_bit>
+					<device_memory>N/A</device_memory>
+					<register_file>N/A</register_file>
+					<l1_cache>N/A</l1_cache>
+					<l2_cache>N/A</l2_cache>
+					<total>N/A</total>
+				</single_bit>
+				<double_bit>
+					<device_memory>N/A</device_memory>
+					<register_file>N/A</register_file>
+					<l1_cache>N/A</l1_cache>
+					<l2_cache>N/A</l2_cache>
+					<total>N/A</total>
+				</double_bit>
+			</aggregate>
+		</ecc_errors>
+		<temperature>
+			<gpu_temp>67 C</gpu_temp>
+		</temperature>
+		<power_readings>
+			<power_state>N/A</power_state>
+			<power_management>N/A</power_management>
+			<power_draw>N/A</power_draw>
+			<power_limit>N/A</power_limit>
+		</power_readings>
+		<clocks>
+			<graphics_clock>N/A</graphics_clock>
+			<sm_clock>N/A</sm_clock>
+			<mem_clock>N/A</mem_clock>
+		</clocks>
+	</gpu>
+</nvidia_smi_log>

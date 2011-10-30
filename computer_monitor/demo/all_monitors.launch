@@ -1,0 +1,18 @@
+<launch>
+    <node name="cpu_monitor" pkg="computer_monitor" type="cpu_monitor.py">
+        <param name="check_ipmi_tool" value="false" type="bool" />
+        <param name="enforce_clock_speed" value="false" type="bool" />
+        <param name="num_cores" value="-1" type="int" />
+    </node>
+    
+    <node name="hd_monitor" pkg="computer_monitor" type="hd_monitor.py"
+    		args="$(optenv HOME /home)" />
+    		
+    <node name="sensors_monitor" pkg="computer_monitor" type="sensors_monitor.py" output="screen">
+    	<param name="ignore_fans" value="true"/>
+    </node>
+    
+    <node name="nvidia_monitor" pkg="computer_monitor" type="nvidia_temp.py">
+    	<param name="xml" value="True"/>
+    </node>
+</launch>
